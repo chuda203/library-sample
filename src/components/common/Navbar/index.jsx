@@ -20,20 +20,21 @@ const Navbar = () => {
     // Hapus token dan set isLoggedIn menjadi false
     Cookies.remove("token");
     setIsLoggedIn(false);
-    navigate("/login"); // Arahkan ke halaman login setelah logout
+    navigate("/login");
+    window.location.reload();
   };
 
   return (
     <div className="fixed navbar bg-base-100">
       <div className="flex-1">
-        <Link className="text-xl btn btn-ghost">Perpustakaanku</Link>
+        <Link className="text-xl btn btn-ghost">Digilib</Link>
       </div>
       <div className="flex-none">
         <ul className="px-1 space-x-2 menu menu-horizontal">
           {isLoggedIn ? (
             <li className="dropdown dropdown-end">
               <label tabIndex={0} className="avatar btn btn-ghost btn-circle">
-                <div className="w-10 rounded-full">
+                <div className="w-10 border-2 rounded-full shadow-lg border-slate-400">
                   <img
                     // src="https://placekitten.com/200/200"
                     src="https://static.vecteezy.com/system/resources/thumbnails/005/129/844/small_2x/profile-user-icon-isolated-on-white-background-eps10-free-vector.jpg"
@@ -55,9 +56,9 @@ const Navbar = () => {
             </li>
           ) : (
             <>
-              {/* <li>
+              <li>
                 <Link to="/">Beranda</Link>
-              </li> */}
+              </li>
               <li>
                 <Link to="/login">Login</Link>
               </li>

@@ -1,12 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-const Sidebar = ({ title, links }) => {
+const Sidebar = ({ links }) => {
   return (
     <div className="fixed flex flex-col min-h-screen text-white bg-gray-800 w-72">
       {/* Sidebar Header */}
       <div className="p-4 text-center border-b border-gray-700">
-        <h1 className="text-2xl font-semibold">{title}</h1>
+        <h1 className="text-2xl font-semibold">Digilib</h1>
       </div>
 
       {/* Sidebar Links */}

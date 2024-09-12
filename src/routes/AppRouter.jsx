@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-import { jwtDecode } from "jwt-decode"; // Correct import for jwtDecode
+import { jwtDecode } from "jwt-decode";
 
 // Lazy load the routes based on role
 const AdminRoutes = lazy(() => import("./admin"));
@@ -24,8 +24,6 @@ function AppRouter() {
         console.error("Invalid token", error);
         navigate("/login");
       }
-    } else {
-      navigate("/login");
     }
   }, [navigate]);
 
@@ -46,9 +44,12 @@ function AppRouter() {
     <Suspense fallback={<div>Loading...</div>}>
       <Routes>
         {/* Render routes based on role */}
-        {role && getRoutesForRole(role)}
+        {role ? (
+          getRoutesForRole(role)
+        ) : (
+          <Route path="*" element={<GuestRoutes />} />
+        )}
         {/* Default route for guests */}
-        <Route path="*" element={<GuestRoutes />} />
       </Routes>
     </Suspense>
   );
