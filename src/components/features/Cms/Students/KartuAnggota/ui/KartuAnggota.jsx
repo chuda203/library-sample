@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@api/firebaseConfig"; // Mengimpor Firestore instance
 import Cookies from "js-cookie";
+import QRCode from "react-qr-code"; // Menggunakan library alternatif
 
 const KartuAnggota = () => {
   const [studentData, setStudentData] = useState({
@@ -9,6 +10,7 @@ const KartuAnggota = () => {
     className: "",
     memberId: "",
     profilImage: "",
+    studentcode: "", // Menyimpan studentcode untuk QR code
   });
 
   useEffect(() => {
@@ -56,7 +58,8 @@ const KartuAnggota = () => {
               name: userData.name,
               className: studentData.class,
               memberId: `SMPN11-${userData.id}`,
-              profilImage: studentData.prifilImage, // Tambahkan gambar profil
+              profilImage: studentData.prifilImage,
+              studentcode: studentDoc.id, // Menyimpan studentcode untuk QR code
             });
           } catch (error) {
             console.error("Error fetching student data:", error);
@@ -89,7 +92,7 @@ const KartuAnggota = () => {
         />
 
         {/* Informasi Siswa */}
-        <div>
+        <div className="flex-grow">
           {/* Nama */}
           <div className="mb-4">
             <p className="text-gray-700 text-sm font-semibold">Nama</p>
@@ -113,6 +116,11 @@ const KartuAnggota = () => {
               {studentData.memberId}
             </p>
           </div>
+        </div>
+
+        {/* QR Code */}
+        <div className="ml-6">
+          <QRCode value={studentData.studentcode} size={128} />
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, addDoc, doc, updateDoc } from "fireb
 import { db } from "@api/firebaseConfig"; // Mengimpor Firestore instance
 import Cookies from "js-cookie"; // Untuk mengambil data dari token
 import Select from "react-select"; // Untuk dropdown dengan fitur pencarian
+import QRCode from "react-qr-code"; // Import QRCode dari react-qr-code
 
 const PeminjamanForm = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ const PeminjamanForm = () => {
   });
 
   const [bookOptions, setBookOptions] = useState([]); // State untuk menyimpan daftar buku
+  const [studentcode, setStudentcode] = useState(""); // State untuk menyimpan studentcode (id dokumen dari collection student)
 
   useEffect(() => {
     // Fetch daftar buku dari Firestore
@@ -60,6 +62,16 @@ const PeminjamanForm = () => {
               nama: userDoc.name, // Mengisi nama otomatis
               noTelepon: userDoc.noTelepon || "", // Nomor telepon, jika ada
             }));
+
+            // Query Firestore untuk mendapatkan data dari koleksi student
+            const studentsRef = collection(db, "student");
+            const studentQuery = query(studentsRef, where("userId", "==", userId));
+            const studentSnapshot = await getDocs(studentQuery);
+
+            if (!studentSnapshot.empty) {
+              const studentDoc = studentSnapshot.docs[0];
+              setStudentcode(studentDoc.id); // Menyimpan id dokumen student sebagai studentcode
+            }
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -156,6 +168,10 @@ const PeminjamanForm = () => {
           {/* Informasi Anggota */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
+              {/* QR code berdasarkan studentcode (id dari koleksi student) */}
+              <div className="flex justify-center mb-4">
+                <QRCode value={studentcode} size={128} />
+              </div>
               <label className="block text-sm font-medium text-gray-700">
                 ID Anggota
               </label>

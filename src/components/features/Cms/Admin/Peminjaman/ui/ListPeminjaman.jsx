@@ -4,12 +4,14 @@ import { db } from "@api/firebaseConfig"; // Firestore instance
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 import { FaTimesCircle, FaCheckCircle } from "react-icons/fa";
+import QRCode from "react-qr-code"; // Import library QRCode
 
 const ListPeminjaman = () => {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
+  const [selectedStudentCode, setSelectedStudentCode] = useState(null); // State untuk QR code yang akan diperbesar
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -43,7 +45,10 @@ const ListPeminjaman = () => {
           const studentCollection = collection(db, "student");
           const studentQuery = query(studentCollection, where("adminId", "==", adminId));
           const studentSnapshot = await getDocs(studentQuery);
-          const studentData = studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const studentData = studentSnapshot.docs.map(doc => ({
+            id: doc.id, // ID dokumen yang disediakan oleh Firestore
+            ...doc.data()
+          }));
 
           // Fetch data books
           const booksCollection = collection(db, "books");
@@ -67,6 +72,7 @@ const ListPeminjaman = () => {
 
                 return {
                   ...student,
+                  studentcode: student.id, // ID dokumen untuk QR code
                   name: userData ? userData.name : "Nama tidak ditemukan",
                   borrowedBookTitle: book ? book.title : "Buku tidak ditemukan",
                   nomorHp: borrow.nomorHp,
@@ -107,6 +113,16 @@ const ListPeminjaman = () => {
     setFilteredStudents(filtered);
   };
 
+  // Function untuk membuka pop-up QR code besar
+  const handleQRCodeClick = (studentcode) => {
+    setSelectedStudentCode(studentcode);
+  };
+
+  // Function untuk menutup pop-up
+  const handleCloseModal = () => {
+    setSelectedStudentCode(null);
+  };
+
   return (
     <div className="max-w-6xl min-h-screen p-6 mx-auto rounded-lg shadow-lg">
       <h2 className="mb-4 text-2xl font-bold">Daftar Peminjaman Buku</h2>
@@ -134,7 +150,7 @@ const ListPeminjaman = () => {
               <th className="px-4 py-2 border-b">Tanggal Pengembalian</th>
               <th className="px-4 py-2 border-b">Judul Buku</th>
               <th className="px-4 py-2 border-b">Status</th>
-              <th className="px-4 py-2 border-b">Foto</th>
+              <th className="px-4 py-2 border-b">QR Code</th>
             </tr>
           </thead>
           <tbody>
@@ -166,12 +182,14 @@ const ListPeminjaman = () => {
                       <FaTimesCircle className="text-red-500" />
                     )}
                   </td>
-                  <td className="px-4 py-2 border-b">
-                    <img
-                      src={student.prifilImage}
-                      alt={student.name}
-                      className="object-cover w-12 h-12 mx-auto rounded-full"
-                    />
+                  {/* QR Code Column */}
+                  <td className="px-4 py-2 text-center border-b">
+                    <div
+                      className="cursor-pointer"
+                      onClick={() => handleQRCodeClick(student.studentcode)}
+                    >
+                      <QRCode value={student.studentcode} size={64} />
+                    </div>
                   </td>
                 </tr>
               ))
@@ -185,6 +203,24 @@ const ListPeminjaman = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Modal QR Code Besar */}
+      {selectedStudentCode && (
+        <div className="fixed top-0 left-0 z-50 flex items-center justify-center w-full h-full bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h3 className="text-center text-lg font-bold mb-4">QR Code</h3>
+            <QRCode value={selectedStudentCode} size={256} />
+            <div className="mt-4 text-center">
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

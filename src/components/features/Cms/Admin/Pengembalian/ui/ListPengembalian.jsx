@@ -3,12 +3,14 @@ import { collection, getDocs, query, where, updateDoc, doc } from "firebase/fire
 import { db } from "@api/firebaseConfig"; // Firestore configuration
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
+import QRCode from "react-qr-code"; // Import QRCode
 
 const ListPengembalian = () => {
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
+  const [selectedStudentCode, setSelectedStudentCode] = useState(null); // State untuk QR code yang akan diperbesar
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -51,13 +53,13 @@ const ListPengembalian = () => {
               return {
                 ...student,
                 borrowId: borrow.id, // Tambahkan ID borrowing untuk update status
+                studentcode: student?.id, // ID dokumen untuk QR code
                 name: user ? user.name : "Nama tidak ditemukan",
                 borrowedBookTitle: book ? book.title : "Buku tidak ditemukan",
                 nomorHp: borrow.nomorHp,
                 tanggalPeminjaman: borrow.tanggalPeminjaman,
                 tanggalPengembalian: borrow.tanggalPengembalian,
                 status: borrow.status, // Status pengembalian buku
-                prifilImage: student?.prifilImage || "", // Gambar profil jika ada
               };
             });
 
@@ -113,6 +115,16 @@ const ListPengembalian = () => {
     setFilteredStudents(filtered);
   };
 
+  // Function untuk membuka pop-up QR code besar
+  const handleQRCodeClick = (studentcode) => {
+    setSelectedStudentCode(studentcode);
+  };
+
+  // Function untuk menutup pop-up
+  const handleCloseModal = () => {
+    setSelectedStudentCode(null);
+  };
+
   return (
     <div className="max-w-6xl min-h-screen p-6 mx-auto rounded-lg shadow-lg">
       <h2 className="mb-4 text-2xl font-bold">Daftar Pengembalian Buku</h2>
@@ -140,7 +152,7 @@ const ListPengembalian = () => {
               <th className="px-4 py-2 border-b">Tanggal Pengembalian</th>
               <th className="px-4 py-2 border-b">Judul Buku</th>
               <th className="px-4 py-2 border-b">Pengembalian</th>
-              <th className="px-4 py-2 border-b">Foto</th>
+              <th className="px-4 py-2 border-b">QR Code</th> {/* Ganti kolom foto dengan QR code */}
             </tr>
           </thead>
           <tbody>
@@ -161,12 +173,14 @@ const ListPengembalian = () => {
                       disabled={student.status === "1"}
                     />
                   </td>
-                  <td className="px-4 py-2 border-b">
-                    <img
-                      src={student.prifilImage}
-                      alt={student.name}
-                      className="object-cover w-12 h-12 mx-auto rounded-full"
-                    />
+                  {/* Kolom QR Code */}
+                  <td className="px-4 py-2 text-center border-b">
+                    <div
+                      className="cursor-pointer"
+                      onClick={() => handleQRCodeClick(student.studentcode)}
+                    >
+                      <QRCode value={student.studentcode} size={64} /> {/* Generate QR code dari studentcode */}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -180,6 +194,24 @@ const ListPengembalian = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Modal QR Code Besar */}
+      {selectedStudentCode && (
+        <div className="fixed top-0 left-0 z-50 flex items-center justify-center w-full h-full bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h3 className="text-center text-lg font-bold mb-4">QR Code</h3>
+            <QRCode value={selectedStudentCode} size={256} />
+            <div className="mt-4 text-center">
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
