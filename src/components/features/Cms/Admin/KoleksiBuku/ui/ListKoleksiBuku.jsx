@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, addDoc } from "firebase/firestore";
-import { db } from "@api/firebaseConfig"; // Firestore instance
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; 
+import { db, storage } from "@api/firebaseConfig"; 
 
 const ListKoleksiBuku = () => {
   const [books, setBooks] = useState([]);
@@ -16,9 +17,10 @@ const ListKoleksiBuku = () => {
     jumlahBuku: "",
     cover: "",
   });
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null); 
 
   useEffect(() => {
-    // Fetch data buku dari Firestore
     const fetchBooks = async () => {
       try {
         const booksCollection = collection(db, "books");
@@ -36,25 +38,40 @@ const ListKoleksiBuku = () => {
     fetchBooks();
   }, []);
 
-  // Handle modal visibility
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  // Handle input change for the new book form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewBook({ ...newBook, [name]: value });
   };
 
-  // Handle form submission
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+
+    const fileReader = new FileReader();
+    fileReader.onload = () => {
+      setPreview(fileReader.result); 
+    };
+    fileReader.readAsDataURL(selectedFile);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Add new book to Firestore
+      let coverUrl = newBook.cover;
+
+      if (file) {
+        const fileRef = ref(storage, `bookCovers/${newBook.kodeBuku}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        coverUrl = await getDownloadURL(fileRef); 
+      }
+
       const booksCollection = collection(db, "books");
-      await addDoc(booksCollection, newBook);
-      // Refresh books list
+      await addDoc(booksCollection, { ...newBook, cover: coverUrl });
+
       const booksSnapshot = await getDocs(booksCollection);
       const booksList = booksSnapshot.docs.map(doc => ({
         id: doc.id,
@@ -72,6 +89,8 @@ const ListKoleksiBuku = () => {
         jumlahBuku: "",
         cover: "",
       });
+      setFile(null);
+      setPreview(null);
       toggleModal();
     } catch (error) {
       console.error("Error adding book:", error);
@@ -97,108 +116,116 @@ const ListKoleksiBuku = () => {
       {/* Modal for adding new book */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-          <div className="p-6 bg-white rounded-lg shadow-lg">
+          <div className="p-6 bg-white rounded-lg shadow-lg w-full max-w-2xl">
             <h2 className="mb-4 text-2xl font-bold">Tambah Buku Baru</h2>
             <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* Bagian Kiri: Input Data Buku */}
                 <div>
-                  <label className="block mb-2 font-semibold">Kode Buku</label>
-                  <input
-                    type="text"
-                    name="kodeBuku"
-                    value={newBook.kodeBuku}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
-                    required
-                  />
+                  <div>
+                    <label className="block mb-2 font-semibold">Kode Buku</label>
+                    <input
+                      type="text"
+                      name="kodeBuku"
+                      value={newBook.kodeBuku}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-semibold">Judul Buku</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={newBook.title}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-semibold">Jenis</label>
+                    <input
+                      type="text"
+                      name="jenis"
+                      value={newBook.jenis}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-semibold">ISBN</label>
+                    <input
+                      type="text"
+                      name="isbn"
+                      value={newBook.isbn}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-semibold">Pengarang</label>
+                    <input
+                      type="text"
+                      name="author"
+                      value={newBook.author}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-semibold">Penerbit</label>
+                    <input
+                      type="text"
+                      name="publisher"
+                      value={newBook.publisher}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-semibold">Tahun Terbit</label>
+                    <input
+                      type="number"
+                      name="publishedYear"
+                      value={newBook.publishedYear}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 font-semibold">Jumlah Buku</label>
+                    <input
+                      type="number"
+                      name="jumlahBuku"
+                      value={newBook.jumlahBuku}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
+                      required
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block mb-2 font-semibold">Judul Buku</label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={newBook.title}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-2 font-semibold">Jenis</label>
-                  <input
-                    type="text"
-                    name="jenis"
-                    value={newBook.jenis}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-2 font-semibold">ISBN</label>
-                  <input
-                    type="text"
-                    name="isbn"
-                    value={newBook.isbn}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-2 font-semibold">Pengarang</label>
-                  <input
-                    type="text"
-                    name="author"
-                    value={newBook.author}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-2 font-semibold">Penerbit</label>
-                  <input
-                    type="text"
-                    name="publisher"
-                    value={newBook.publisher}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-2 font-semibold">Tahun Terbit</label>
-                  <input
-                    type="number"
-                    name="publishedYear"
-                    value={newBook.publishedYear}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-2 font-semibold">Jumlah Buku</label>
-                  <input
-                    type="number"
-                    name="jumlahBuku"
-                    value={newBook.jumlahBuku}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
-                    required
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block mb-2 font-semibold">Cover Buku (URL)</label>
-                  <input
-                    type="text"
-                    name="cover"
-                    value={newBook.cover}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded-lg border-gray-300 bg-slate-100"
-                    required
-                  />
+
+                {/* Bagian Kanan: Upload Cover Buku dan Preview */}
+                <div className="flex flex-col items-center">
+                  <div className="mb-4">
+                    {preview ? (
+                      <img src={preview} alt="Preview Cover" className="w-32 h-32 object-cover" />
+                    ) : (
+                      <img src="/default-cover.png" alt="Default Cover" className="w-32 h-32 object-cover" />
+                    )}
+                  </div>
+
+                  <label className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                    Upload Cover
+                    <input type="file" onChange={handleFileChange} className="hidden" />
+                  </label>
                 </div>
               </div>
 

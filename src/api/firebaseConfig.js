@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage"; // Tambahkan ini
 
 // Firebase configuration
 const firebaseConfig = {
@@ -17,5 +18,7 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore
 const db = getFirestore(app);
+const storage = getStorage(app); // Inisialisasi Firebase Storage
 
-export { db };
+
+export { db, storage }; // Pastikan kamu mengekspor storage

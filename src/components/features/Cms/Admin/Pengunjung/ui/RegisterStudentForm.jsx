@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { collection, addDoc, query, where, getDocs, orderBy, limit } from "firebase/firestore";
-import { db } from "@api/firebaseConfig"; // Firebase Firestore configuration
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Firebase Storage
+import { db, storage } from "@api/firebaseConfig";
 import Cookies from "js-cookie";
-import { jwtDecode } from "jwt-decode"; // Pastikan Anda memiliki library ini
+import { jwtDecode } from "jwt-decode";
 
 const RegisterStudentForm = ({ onStudentAdded }) => {
   const [formData, setFormData] = useState({
@@ -12,26 +13,22 @@ const RegisterStudentForm = ({ onStudentAdded }) => {
     class: "",
     prifilImage: "",
   });
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null); // State untuk preview gambar
   const [adminId, setAdminId] = useState(null);
 
   useEffect(() => {
     const getAdminId = async () => {
       try {
-        // Ambil token dari cookie
         const token = Cookies.get("token");
-
         if (token) {
-          // Decode token untuk mendapatkan userId dari admin yang login
           const decoded = jwtDecode(token);
           const userId = decoded.id;
-
-          // Cari admin berdasarkan userId di collection 'admin'
           const q = query(collection(db, "admin"), where("userId", "==", userId));
           const querySnapshot = await getDocs(q);
-
           if (!querySnapshot.empty) {
-            const adminDoc = querySnapshot.docs[0].data(); // Ambil data dari dokumen pertama yang ditemukan
-            setAdminId(adminDoc.id); // Ambil field 'id' dari dokumen admin
+            const adminDoc = querySnapshot.docs[0].data();
+            setAdminId(adminDoc.id);
           } else {
             console.error("Admin tidak ditemukan.");
           }
@@ -42,7 +39,6 @@ const RegisterStudentForm = ({ onStudentAdded }) => {
         console.error("Error getting admin ID:", error);
       }
     };
-
     getAdminId();
   }, []);
 
@@ -51,16 +47,27 @@ const RegisterStudentForm = ({ onStudentAdded }) => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+
+    // Menampilkan preview gambar
+    const fileReader = new FileReader();
+    fileReader.onload = () => {
+      setPreview(fileReader.result); // Set gambar preview dari file yang dipilih
+    };
+    fileReader.readAsDataURL(selectedFile);
+  };
+
   const generateUserId = async () => {
     const q = query(collection(db, "student"), orderBy("userId", "desc"), limit(1));
     const querySnapshot = await getDocs(q);
-
     if (!querySnapshot.empty) {
       const lastStudent = querySnapshot.docs[0].data();
-      const lastUserId = parseInt(lastStudent.userId, 10); // Ambil userId terakhir dan konversi ke integer
-      return (lastUserId + 1).toString(); // Tambahkan 1 untuk userId berikutnya
+      const lastUserId = parseInt(lastStudent.userId, 10);
+      return (lastUserId + 1).toString();
     } else {
-      return "2415001"; // Jika belum ada userId, mulai dari 2415001
+      return "2415001";
     }
   };
 
@@ -73,29 +80,33 @@ const RegisterStudentForm = ({ onStudentAdded }) => {
     }
 
     try {
-      // Generate `userId` baru dengan format `241500x` dari koleksi `student`
       const newUserId = await generateUserId();
+      let profileImageUrl = formData.prifilImage;
 
-      // Tambahkan ke koleksi `users` di Firestore dengan `id` baru
+      // Jika ada file yang diupload, unggah ke Firebase Storage
+      if (file) {
+        const fileRef = ref(storage, `profileImages/${newUserId}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        profileImageUrl = await getDownloadURL(fileRef); // Mendapatkan URL dari gambar yang diunggah
+      }
+
       await addDoc(collection(db, "users"), {
-        id: newUserId, // Gunakan userId baru, sebagai id di users
+        id: newUserId,
         name: formData.name,
         username: formData.username,
         password: formData.password,
-        role: "student", // Selalu student
+        role: "student",
       });
 
-      // Tambahkan ke koleksi `student` di Firestore dengan `userId` dari `users` dan `adminId`
       await addDoc(collection(db, "student"), {
-        userId: newUserId, // Terhubung ke id dari users collection
-        adminId: adminId, // Ambil adminId dari field 'id' di admin yang login
+        userId: newUserId,
+        adminId: adminId,
         class: formData.class,
-        prifilImage: formData.prifilImage,
-        lastBorrowedDate: null, // Baru mendaftar, jadi belum ada buku yang dipinjam
-        status: "active", // Status aktif untuk anggota yang baru didaftarkan
+        prifilImage: profileImageUrl, // URL dari Firebase Storage atau yang dimasukkan secara manual
+        lastBorrowedDate: null,
+        status: "active",
       });
 
-      // Reset form setelah submit
       setFormData({
         name: "",
         username: "",
@@ -103,10 +114,11 @@ const RegisterStudentForm = ({ onStudentAdded }) => {
         class: "",
         prifilImage: "",
       });
+      setFile(null);
+      setPreview(null); // Reset preview setelah form di-submit
 
       alert("Anggota perpustakaan berhasil didaftarkan!");
 
-      // Panggil callback onStudentAdded setelah berhasil menambahkan anggota
       if (onStudentAdded) {
         onStudentAdded();
       }
@@ -117,92 +129,91 @@ const RegisterStudentForm = ({ onStudentAdded }) => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="w-full max-w-4xl p-6 bg-white rounded-lg shadow-lg">
         <h2 className="mb-6 text-2xl font-bold text-center">
           Pendaftaran Anggota Perpustakaan
         </h2>
+        <div className="grid grid-cols-2 gap-6">
+          {/* Bagian Kiri: Form Input */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Nama</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 mt-1 border rounded-lg shadow-sm bg-slate-50"
+                placeholder="Masukkan nama anggota"
+                required
+              />
+            </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Nama */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Nama</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 mt-1 border rounded-lg shadow-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Masukkan nama anggota"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Username</label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 mt-1 border rounded-lg shadow-sm bg-slate-50"
+                placeholder="Masukkan username"
+                required
+              />
+            </div>
 
-          {/* Username */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 mt-1 border rounded-lg shadow-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Masukkan username"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 mt-1 border rounded-lg shadow-sm bg-slate-50"
+                placeholder="Masukkan password"
+                required
+              />
+            </div>
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 mt-1 border rounded-lg shadow-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Masukkan password"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Kelas</label>
+              <input
+                type="text"
+                name="class"
+                value={formData.class}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 mt-1 border rounded-lg shadow-sm bg-slate-50"
+                placeholder="Masukkan kelas"
+                required
+              />
+            </div>
 
-          {/* Kelas */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Kelas</label>
-            <input
-              type="text"
-              name="class"
-              value={formData.class}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 mt-1 border rounded-lg shadow-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Masukkan kelas"
-              required
-            />
-          </div>
+            <div className="flex justify-end space-x-4">
+              <button type="submit" className="px-4 py-2 text-white bg-green-500 rounded-lg hover:bg-green-600">
+                Daftarkan Anggota
+              </button>
+            </div>
+          </form>
 
-          {/* URL Foto Profil */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">URL Foto Profil</label>
-            <input
-              type="text"
-              name="prifilImage"
-              value={formData.prifilImage}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 mt-1 border rounded-lg shadow-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Masukkan URL foto profil"
-            />
-          </div>
+          {/* Bagian Kanan: Upload Foto Profil */}
+          <div className="flex flex-col items-center">
+            {/* Gambar Default atau Preview */}
+            <div className="mb-4">
+              {preview ? (
+                <img src={preview} alt="Preview" className="w-32 h-32 rounded-full object-cover" />
+              ) : (
+                <img src="https://static.vecteezy.com/system/resources/thumbnails/005/129/844/small_2x/profile-user-icon-isolated-on-white-background-eps10-free-vector.jpg" alt="Default User" className="w-32 h-32 rounded-full" />
+              )}
+            </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end space-x-4">
-            <button
-              type="submit"
-              className="px-4 py-2 text-white bg-green-500 rounded-lg hover:bg-green-600"
-            >
-              Daftarkan Anggota
-            </button>
+            {/* Tombol Upload */}
+            <label className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+              Upload Foto
+              <input type="file" onChange={handleFileChange} className="hidden" />
+            </label>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
