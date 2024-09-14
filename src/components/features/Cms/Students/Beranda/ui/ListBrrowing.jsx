@@ -23,9 +23,9 @@ const ListBorrowing = () => {
           const querySnapshot = await getDocs(q);
 
           // Mengonversi hasil query ke array
-          const borrowingsData = querySnapshot.docs.map(doc => ({
+          const borrowingsData = querySnapshot.docs.map((doc) => ({
             id: doc.id,
-            ...doc.data()
+            ...doc.data(),
           }));
 
           setBorrowings(borrowingsData);
@@ -40,6 +40,13 @@ const ListBorrowing = () => {
     fetchBorrowings();
   }, []);
 
+  // Fungsi untuk mengubah timestamp menjadi format "day, dd month yyyy"
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp.seconds * 1000);
+    const options = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
+    return date.toLocaleDateString("id-ID", options); // Menggunakan locale Indonesia
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">Daftar Buku yang Dipinjam</h2>
@@ -53,18 +60,17 @@ const ListBorrowing = () => {
               key={borrow.id}
               className="border border-gray-300 rounded-lg p-4 shadow-sm"
             >
-              <h3 className="text-lg font-bold mb-2">
-                ID Peminjaman: {borrow.id}
-              </h3>
+              <h3 className="text-lg font-bold mb-2">ID Peminjaman: {borrow.id}</h3>
               <p className="text-sm mb-1">
                 <strong>Kode Buku:</strong> {borrow.kodeBuku}
               </p>
               <p className="text-sm mb-1">
-                <strong>Tanggal Peminjaman:</strong> {borrow.tanggalPeminjaman}
+                <strong>Tanggal Peminjaman:</strong>{" "}
+                {borrow.tanggalPeminjaman ? formatTimestamp(borrow.tanggalPeminjaman) : "Tidak tersedia"}
               </p>
               <p className="text-sm mb-1">
                 <strong>Tanggal Pengembalian:</strong>{" "}
-                {borrow.tanggalPengembalian}
+                {borrow.tanggalPengembalian ? formatTimestamp(borrow.tanggalPengembalian) : "Belum dikembalikan"}
               </p>
             </div>
           ))}

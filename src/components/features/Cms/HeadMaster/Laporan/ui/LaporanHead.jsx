@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "@api/firebaseConfig"; // Import Firestore instance
+import { db } from "@api/firebaseConfig"; // Firestore instance
 import { Bar } from "react-chartjs-2";
 import "chart.js/auto"; // Ensure chart.js is auto-registered
 
@@ -31,11 +31,6 @@ const Laporan = () => {
         const borrowedBooks = borrowingData.filter(b => b.status === "0"); // Status 0 means not returned
         const returnedBooks = borrowingData.filter(b => b.status === "1"); // Status 1 means returned
 
-        // Calculate statistics
-        const totalBooks = bookData.length;
-        const totalBorrowedBooks = borrowedBooks.length;
-        const totalReturnedBooks = returnedBooks.length;
-
         // Set state for books, borrowings, and returns
         setBooks(bookData);
         setBorrowings(borrowedBooks);
@@ -44,7 +39,7 @@ const Laporan = () => {
         // Map borrowing data to include student names and book titles
         const studentDetails = await Promise.all(
           borrowingData.map(async (borrow) => {
-            const student = studentData.find(student => student.id === borrow.studentId);
+            const student = studentData.find(student => student.userId === borrow.studentId);
             const book = bookData.find(book => book.kodeBuku === borrow.kodeBuku);
             const user = userData.find(user => user.id === (student ? student.userId : null));
 
@@ -127,30 +122,34 @@ const Laporan = () => {
             </tr>
           </thead>
           <tbody>
-            {borrowings.map((borrow) => {
-              const student = students.find((s) => s.id === borrow.studentId);
-              const book = books.find((b) => b.kodeBuku === borrow.kodeBuku);
-              return (
-                <tr key={borrow.id}>
-                  <td className="px-4 py-2 text-center border-b">
-                    {student?.name || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {student?.class || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {borrow.tanggalPeminjaman}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {book?.title || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center text-red-500 border-b">
-                    Dipinjam
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+  {borrowings.map((borrow) => {
+    const student = students.find((s) => s.userId === borrow.studentId);
+    const book = books.find((b) => b.kodeBuku === borrow.kodeBuku);
+
+    // Pastikan tanggal diubah menjadi format yang bisa dibaca
+    const tanggalPeminjaman = borrow.tanggalPeminjaman?.toDate().toLocaleDateString("id-ID") || "Tanggal tidak ditemukan";
+    
+    return (
+      <tr key={borrow.id}> {/* Pastikan key unik */}
+        <td className="px-4 py-2 text-center border-b">
+          {student?.name || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {student?.class || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {tanggalPeminjaman}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {book?.title || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center text-red-500 border-b">
+          Dipinjam
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
         </table>
       </div>
 
@@ -168,30 +167,34 @@ const Laporan = () => {
             </tr>
           </thead>
           <tbody>
-            {returns.map((ret) => {
-              const student = students.find((s) => s.id === ret.studentId);
-              const book = books.find((b) => b.kodeBuku === ret.kodeBuku);
-              return (
-                <tr key={ret.id}>
-                  <td className="px-4 py-2 text-center border-b">
-                    {student?.name || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {student?.class || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {ret.tanggalPengembalian}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {book?.title || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center text-green-500 border-b">
-                    Dikembalikan
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+  {returns.map((ret) => {
+    const student = students.find((s) => s.userId === ret.studentId);
+    const book = books.find((b) => b.kodeBuku === ret.kodeBuku);
+
+    // Pastikan tanggal diubah menjadi format yang bisa dibaca
+    const tanggalPengembalian = ret.tanggalPengembalian?.toDate().toLocaleDateString("id-ID") || "Tanggal tidak ditemukan";
+    
+    return (
+      <tr key={ret.id}> {/* Pastikan key unik */}
+        <td className="px-4 py-2 text-center border-b">
+          {student?.name || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {student?.class || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {tanggalPengembalian}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {book?.title || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center text-green-500 border-b">
+          Dikembalikan
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
         </table>
       </div>
 

@@ -10,61 +10,63 @@ const ListPengembalian = () => {
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState(null);
-  const [selectedStudentCode, setSelectedStudentCode] = useState(null); // State untuk QR code yang akan diperbesar
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        // Ambil token dari cookie
         const token = Cookies.get("token");
 
         if (token) {
-          // Decode token untuk mendapatkan informasi user
           const decoded = jwtDecode(token);
           const role = decoded.role;
 
-          // Cek apakah role adalah admin
           if (role === "admin") {
-            // Ambil data peminjaman dari Firestore (borrowing dengan status 0 berarti belum dikembalikan)
             const borrowingSnapshot = await getDocs(
               query(collection(db, "borrowing"), where("status", "==", "0"))
             );
             const borrowingData = borrowingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // Ambil data student dari Firestore
             const studentSnapshot = await getDocs(collection(db, "student"));
             const studentData = studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // Ambil data users dari Firestore untuk nama siswa
             const userSnapshot = await getDocs(collection(db, "users"));
             const userData = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // Ambil data buku dari Firestore untuk judul buku
             const bookSnapshot = await getDocs(collection(db, "books"));
             const bookData = bookSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // Filter dan gabungkan data borrowing, student, dan users
             const studentDetails = borrowingData.map(borrow => {
-              // Cari student berdasarkan userId, bukan student.id
               const student = studentData.find(student => student.userId === borrow.studentId);
               const user = userData.find(user => user.id === student?.userId);
               const book = bookData.find(book => book.kodeBuku === borrow.kodeBuku);
 
+              // Konversi timestamp menjadi format yang bisa dibaca
+              const formatTimestamp = (timestamp) => {
+                const date = new Date(timestamp.seconds * 1000);
+                return date.toLocaleDateString("id-ID", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                });
+              };
+
               return {
                 ...student,
-                borrowId: borrow.id, // Tambahkan ID borrowing untuk update status
-                studentcode: student?.id, // ID dokumen untuk QR code
+                borrowId: borrow.id,
+                studentcode: student?.id,
                 name: user ? user.name : "Nama tidak ditemukan",
                 borrowedBookTitle: book ? book.title : "Buku tidak ditemukan",
                 nomorHp: borrow.nomorHp,
-                tanggalPeminjaman: borrow.tanggalPeminjaman,
-                tanggalPengembalian: borrow.tanggalPengembalian,
-                status: borrow.status, // Status pengembalian buku
+                tanggalPeminjaman: formatTimestamp(borrow.tanggalPeminjaman), // Konversi timestamp
+                tanggalPengembalian: borrow.tanggalPengembalian
+                  ? formatTimestamp(borrow.tanggalPengembalian)
+                  : "Belum dikembalikan", // Konversi timestamp
+                status: borrow.status,
               };
             });
 
             setStudents(studentDetails);
-            setFilteredStudents(studentDetails); // Set initial filtered students
+            setFilteredStudents(studentDetails);
           } else {
             setError("You are not authorized to view this page.");
           }
@@ -80,19 +82,14 @@ const ListPengembalian = () => {
     fetchStudents();
   }, []);
 
-  // Fungsi untuk update status pengembalian di Firestore
   const handleStatusChange = async (borrowId) => {
     try {
       const borrowingDocRef = doc(db, "borrowing", borrowId);
-      // Update status peminjaman di Firestore menjadi 1 (dikembalikan)
-      await updateDoc(borrowingDocRef, {
-        status: "1",
-      });
+      await updateDoc(borrowingDocRef, { status: "1" });
 
-      // Perbarui data lokal setelah perubahan status
       const updatedStudents = students.map((student) => {
         if (student.borrowId === borrowId) {
-          return { ...student, status: "1" }; // Update status menjadi true
+          return { ...student, status: "1" };
         }
         return student;
       });
@@ -108,21 +105,10 @@ const ListPengembalian = () => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
 
-    // Filter daftar siswa berdasarkan query pencarian
     const filtered = students.filter((student) =>
       student.name.toLowerCase().includes(query)
     );
     setFilteredStudents(filtered);
-  };
-
-  // Function untuk membuka pop-up QR code besar
-  const handleQRCodeClick = (studentcode) => {
-    setSelectedStudentCode(studentcode);
-  };
-
-  // Function untuk menutup pop-up
-  const handleCloseModal = () => {
-    setSelectedStudentCode(null);
   };
 
   return (
@@ -130,7 +116,6 @@ const ListPengembalian = () => {
       <h2 className="mb-4 text-2xl font-bold">Daftar Pengembalian Buku</h2>
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* Search Bar */}
       <div className="mb-4">
         <input
           type="text"
@@ -152,7 +137,7 @@ const ListPengembalian = () => {
               <th className="px-4 py-2 border-b">Tanggal Pengembalian</th>
               <th className="px-4 py-2 border-b">Judul Buku</th>
               <th className="px-4 py-2 border-b">Pengembalian</th>
-              <th className="px-4 py-2 border-b">QR Code</th> {/* Ganti kolom foto dengan QR code */}
+              <th className="px-4 py-2 border-b">QR Code</th>
             </tr>
           </thead>
           <tbody>
@@ -173,14 +158,8 @@ const ListPengembalian = () => {
                       disabled={student.status === "1"}
                     />
                   </td>
-                  {/* Kolom QR Code */}
                   <td className="px-4 py-2 text-center border-b">
-                    <div
-                      className="cursor-pointer"
-                      onClick={() => handleQRCodeClick(student.studentcode)}
-                    >
-                      <QRCode value={student.studentcode} size={64} /> {/* Generate QR code dari studentcode */}
-                    </div>
+                    <QRCode value={student.studentcode} size={64} />
                   </td>
                 </tr>
               ))
@@ -194,24 +173,6 @@ const ListPengembalian = () => {
           </tbody>
         </table>
       </div>
-
-      {/* Modal QR Code Besar */}
-      {selectedStudentCode && (
-        <div className="fixed top-0 left-0 z-50 flex items-center justify-center w-full h-full bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h3 className="text-center text-lg font-bold mb-4">QR Code</h3>
-            <QRCode value={selectedStudentCode} size={256} />
-            <div className="mt-4 text-center">
-              <button
-                onClick={handleCloseModal}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

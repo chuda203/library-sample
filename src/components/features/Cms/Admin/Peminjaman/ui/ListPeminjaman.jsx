@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@api/firebaseConfig"; // Firestore instance
 import Cookies from "js-cookie";
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode"; // Impor named
 import { FaTimesCircle, FaCheckCircle } from "react-icons/fa";
 import QRCode from "react-qr-code"; // Import library QRCode
 
@@ -27,7 +27,7 @@ const ListPeminjaman = () => {
           const adminCollection = collection(db, "admin");
           const adminQuery = query(adminCollection, where("userId", "==", userId));
           const adminSnapshot = await getDocs(adminQuery);
-          const adminData = adminSnapshot.docs.map(doc => doc.data())[0];
+          const adminData = adminSnapshot.docs.map((doc) => doc.data())[0];
 
           if (!adminData) {
             throw new Error("Admin not found");
@@ -39,36 +39,47 @@ const ListPeminjaman = () => {
           const borrowingCollection = collection(db, "borrowing");
           const borrowingQuery = query(borrowingCollection);
           const borrowingSnapshot = await getDocs(borrowingQuery);
-          const borrowingData = borrowingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const borrowingData = borrowingSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
           // Fetch data student berdasarkan adminId
           const studentCollection = collection(db, "student");
           const studentQuery = query(studentCollection, where("adminId", "==", adminId));
           const studentSnapshot = await getDocs(studentQuery);
-          const studentData = studentSnapshot.docs.map(doc => ({
+          const studentData = studentSnapshot.docs.map((doc) => ({
             id: doc.id, // ID dokumen yang disediakan oleh Firestore
-            ...doc.data()
+            ...doc.data(),
           }));
 
           // Fetch data books
           const booksCollection = collection(db, "books");
           const booksSnapshot = await getDocs(booksCollection);
-          const booksData = booksSnapshot.docs.map(doc => doc.data());
+          const booksData = booksSnapshot.docs.map((doc) => doc.data());
 
           // Proses data siswa dan tambahkan jumlah buku yang dipinjam
           const studentDetails = await Promise.all(
             borrowingData.map(async (borrow) => {
-              const student = studentData.find(student => student.userId === borrow.studentId);
+              const student = studentData.find((student) => student.userId === borrow.studentId);
 
               if (student) {
                 // Find user details based on userId in student
                 const userCollection = collection(db, "users");
                 const userQuery = query(userCollection, where("id", "==", student.userId));
                 const userSnapshot = await getDocs(userQuery);
-                const userData = userSnapshot.docs.map(doc => doc.data())[0];
+                const userData = userSnapshot.docs.map((doc) => doc.data())[0];
 
                 // Find book details based on kodeBuku in borrowing
-                const book = booksData.find(book => book.kodeBuku === borrow.kodeBuku);
+                const book = booksData.find((book) => book.kodeBuku === borrow.kodeBuku);
+
+                // Konversi Timestamp ke format yang mudah dibaca
+                const formatDate = (timestamp) => {
+                  const date = new Date(timestamp.seconds * 1000);
+                  return date.toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  });
+                };
 
                 return {
                   ...student,
@@ -76,8 +87,10 @@ const ListPeminjaman = () => {
                   name: userData ? userData.name : "Nama tidak ditemukan",
                   borrowedBookTitle: book ? book.title : "Buku tidak ditemukan",
                   nomorHp: borrow.nomorHp,
-                  tanggalPeminjaman: borrow.tanggalPeminjaman,
-                  tanggalPengembalian: borrow.tanggalPengembalian,
+                  tanggalPeminjaman: formatDate(borrow.tanggalPeminjaman), // Konversi tanggal peminjaman
+                  tanggalPengembalian: borrow.tanggalPengembalian
+                    ? formatDate(borrow.tanggalPengembalian) // Konversi tanggal pengembalian
+                    : "Belum dikembalikan",
                   status: borrow.status,
                 };
               }
@@ -86,7 +99,7 @@ const ListPeminjaman = () => {
           );
 
           // Filter out null values
-          const filteredStudents = studentDetails.filter(student => student !== null);
+          const filteredStudents = studentDetails.filter((student) => student !== null);
 
           setStudents(filteredStudents);
           setFilteredStudents(filteredStudents); // Set initial filtered students

@@ -12,20 +12,16 @@ const StudentInfo = () => {
   });
 
   useEffect(() => {
-    // Ambil token dari cookie
     const token = Cookies.get("token");
 
     if (token) {
       try {
-        // Decode token untuk mendapatkan payload
         const base64Payload = token.split(".")[1];
         const payload = JSON.parse(atob(base64Payload));
         const userId = payload.id;
 
-        // Fungsi untuk mengambil data siswa berdasarkan ID user
         const fetchStudentData = async () => {
           try {
-            // Query untuk mendapatkan data pengguna dari collection 'users'
             const usersRef = collection(db, "users");
             const userQuery = query(usersRef, where("id", "==", userId));
             const userSnapshot = await getDocs(userQuery);
@@ -38,7 +34,6 @@ const StudentInfo = () => {
             const userDoc = userSnapshot.docs[0];
             const userData = userDoc.data();
 
-            // Query untuk mendapatkan data siswa dari collection 'student'
             const studentsRef = collection(db, "student");
             const studentQuery = query(studentsRef, where("userId", "==", userId));
             const studentSnapshot = await getDocs(studentQuery);
@@ -51,16 +46,25 @@ const StudentInfo = () => {
             const studentDoc = studentSnapshot.docs[0];
             const studentData = studentDoc.data();
 
-            // Mengambil status dari field 'status' di student collection
             const activeStatus =
               studentData.status === "active" ? "Siswa Aktif" : "Siswa Tidak Aktif";
 
-            // Set data ke state
+            // Fungsi untuk mengubah timestamp menjadi format "day, dd month yyyy"
+            const formatTimestamp = (timestamp) => {
+              const date = new Date(timestamp.seconds * 1000);
+              const options = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
+              return date.toLocaleDateString("id-ID", options); // Menggunakan locale Indonesia
+            };
+
+            const lastBorrowedDate = studentData.lastBorrowedDate
+              ? formatTimestamp(studentData.lastBorrowedDate)
+              : "Belum ada peminjaman";
+
             setStudentData({
               name: userData.name,
               class: studentData.class,
               activeStatus: activeStatus,
-              lastBorrowedDate: studentData.lastBorrowedDate || "Belum ada peminjaman",
+              lastBorrowedDate: lastBorrowedDate,
             });
           } catch (error) {
             console.error("Error fetching student data:", error);

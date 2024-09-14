@@ -4,7 +4,7 @@ import { db } from "@api/firebaseConfig"; // Firebase Firestore configuration
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode"; // Pastikan Anda memiliki library ini
 
-const RegisterStudentForm = () => {
+const RegisterStudentForm = ({ onStudentAdded }) => {
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -51,7 +51,6 @@ const RegisterStudentForm = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  // Fungsi untuk generate `userId` dengan format `241500x` dari koleksi `student`
   const generateUserId = async () => {
     const q = query(collection(db, "student"), orderBy("userId", "desc"), limit(1));
     const querySnapshot = await getDocs(q);
@@ -106,6 +105,11 @@ const RegisterStudentForm = () => {
       });
 
       alert("Anggota perpustakaan berhasil didaftarkan!");
+
+      // Panggil callback onStudentAdded setelah berhasil menambahkan anggota
+      if (onStudentAdded) {
+        onStudentAdded();
+      }
     } catch (error) {
       console.error("Error registering student:", error);
       alert("Terjadi kesalahan saat mendaftarkan anggota.");

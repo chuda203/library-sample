@@ -122,30 +122,34 @@ const Laporan = () => {
             </tr>
           </thead>
           <tbody>
-            {borrowings.map((borrow) => {
-              const student = students.find((s) => s.userId === borrow.studentId);
-              const book = books.find((b) => b.kodeBuku === borrow.kodeBuku);
-              return (
-                <tr key={borrow.id}>
-                  <td className="px-4 py-2 text-center border-b">
-                    {student?.name || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {student?.class || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {borrow.tanggalPeminjaman}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {book?.title || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center text-red-500 border-b">
-                    Dipinjam
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+  {borrowings.map((borrow) => {
+    const student = students.find((s) => s.userId === borrow.studentId);
+    const book = books.find((b) => b.kodeBuku === borrow.kodeBuku);
+
+    // Pastikan tanggal diubah menjadi format yang bisa dibaca
+    const tanggalPeminjaman = borrow.tanggalPeminjaman?.toDate().toLocaleDateString("id-ID") || "Tanggal tidak ditemukan";
+    
+    return (
+      <tr key={borrow.id}> {/* Pastikan key unik */}
+        <td className="px-4 py-2 text-center border-b">
+          {student?.name || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {student?.class || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {tanggalPeminjaman}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {book?.title || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center text-red-500 border-b">
+          Dipinjam
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
         </table>
       </div>
 
@@ -163,30 +167,34 @@ const Laporan = () => {
             </tr>
           </thead>
           <tbody>
-            {returns.map((ret) => {
-              const student = students.find((s) => s.userId === ret.studentId);
-              const book = books.find((b) => b.kodeBuku === ret.kodeBuku);
-              return (
-                <tr key={ret.id}>
-                  <td className="px-4 py-2 text-center border-b">
-                    {student?.name || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {student?.class || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {ret.tanggalPengembalian}
-                  </td>
-                  <td className="px-4 py-2 text-center border-b">
-                    {book?.title || "Tidak Ditemukan"}
-                  </td>
-                  <td className="px-4 py-2 text-center text-green-500 border-b">
-                    Dikembalikan
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+  {returns.map((ret) => {
+    const student = students.find((s) => s.userId === ret.studentId);
+    const book = books.find((b) => b.kodeBuku === ret.kodeBuku);
+
+    // Pastikan tanggal diubah menjadi format yang bisa dibaca
+    const tanggalPengembalian = ret.tanggalPengembalian?.toDate().toLocaleDateString("id-ID") || "Tanggal tidak ditemukan";
+    
+    return (
+      <tr key={ret.id}> {/* Pastikan key unik */}
+        <td className="px-4 py-2 text-center border-b">
+          {student?.name || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {student?.class || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {tanggalPengembalian}
+        </td>
+        <td className="px-4 py-2 text-center border-b">
+          {book?.title || "Tidak Ditemukan"}
+        </td>
+        <td className="px-4 py-2 text-center text-green-500 border-b">
+          Dikembalikan
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
         </table>
       </div>
 

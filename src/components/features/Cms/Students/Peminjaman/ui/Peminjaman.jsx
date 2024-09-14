@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, where, getDocs, addDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, doc, updateDoc, Timestamp } from "firebase/firestore";
 import { db } from "@api/firebaseConfig"; // Mengimpor Firestore instance
 import Cookies from "js-cookie"; // Untuk mengambil data dari token
 import Select from "react-select"; // Untuk dropdown dengan fitur pencarian
@@ -107,12 +107,16 @@ const PeminjamanForm = () => {
     e.preventDefault();
 
     try {
+      // Konversi tanggal dari string menjadi Firebase Timestamp
+      const tanggalPeminjamanTimestamp = Timestamp.fromDate(new Date(formData.tanggalPeminjaman));
+      const tanggalPengembalianTimestamp = Timestamp.fromDate(new Date(formData.tanggalPengembalian));
+
       // Lakukan POST request ke Firestore untuk menyimpan data peminjaman
       const borrowingData = {
         studentId: formData.id, // ID User yang melakukan peminjaman
         kodeBuku: formData.kodeBuku, // Kode Buku yang dipinjam
-        tanggalPeminjaman: formData.tanggalPeminjaman,
-        tanggalPengembalian: formData.tanggalPengembalian,
+        tanggalPeminjaman: tanggalPeminjamanTimestamp, // Simpan sebagai Timestamp
+        tanggalPengembalian: tanggalPengembalianTimestamp, // Simpan sebagai Timestamp
         nomorHp: formData.noTelepon, // Nomor telepon peminjam
         status: "0", // Status set ke 0 (belum dikembalikan)
       };
@@ -129,9 +133,9 @@ const PeminjamanForm = () => {
         const studentDoc = studentSnapshot.docs[0];
         const studentDocRef = doc(db, "student", studentDoc.id);
 
-        // Update lastBorrowedDate di document student
+        // Update lastBorrowedDate di document student dengan Timestamp
         await updateDoc(studentDocRef, {
-          lastBorrowedDate: formData.tanggalPeminjaman,
+          lastBorrowedDate: tanggalPeminjamanTimestamp,
         });
 
         console.log("Field lastBorrowedDate berhasil diupdate.");
