@@ -24,7 +24,7 @@ const StudentSidebar = ({ children }) => {
   const links = [
     {
       name: "Beranda",
-      path: "/student",
+      path: "/student/siswa",
       icon: <FaHome />,
     },
     {
@@ -43,7 +43,7 @@ const StudentSidebar = ({ children }) => {
   return (
     <div className="flex">
       <Sidebar title={username} links={links} />
-      <div className="p-4 w-full">{children}</div>
+      <div className="w-full p-4">{children}</div>
     </div>
   );
 };

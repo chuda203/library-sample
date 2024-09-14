@@ -4,9 +4,11 @@ import React from "react";
 
 const StudentPage = () => {
   return (
-    <div className="min-h-screen ml-72">
-      <StudentInfo />
-      <ListBorrowing />
+    <div className="min-h-screen mt-20 ml-72">
+      <div>
+        <StudentInfo />
+        <ListBorrowing />
+      </div>
     </div>
   );
 };

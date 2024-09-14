@@ -3,7 +3,7 @@ import React from "react";
 
 const KartuAnggotaPage = () => {
   return (
-    <div className="min-h-screen ml-72">
+    <div className="min-h-screen mt-40 ml-72">
       <KartuAnggota />
     </div>
   );

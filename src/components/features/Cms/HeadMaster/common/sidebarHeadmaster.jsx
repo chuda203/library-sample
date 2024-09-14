@@ -24,7 +24,7 @@ const HeadMasterSidebar = ({ children }) => {
   const links = [
     {
       name: "Laporan",
-      path: "/headmaster",
+      path: "/headmaster/laporan",
       icon: <FaUserFriends />,
     },
   ];

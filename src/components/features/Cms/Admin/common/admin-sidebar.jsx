@@ -32,7 +32,7 @@ const AdminSidebar = ({ children }) => {
   const links = [
     {
       name: "Anggota",
-      path: "/admin",
+      path: "/admin/anggota",
       icon: <FaUserFriends />,
     },
     {
