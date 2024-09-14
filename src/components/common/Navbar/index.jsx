@@ -20,7 +20,7 @@ const Navbar = () => {
     // Hapus token dan set isLoggedIn menjadi false
     Cookies.remove("token");
     setIsLoggedIn(false);
-    navigate("/login");
+    navigate("/");
     window.location.reload();
   };
 
@@ -59,9 +59,9 @@ const Navbar = () => {
               <li>
                 <Link to="/">Beranda</Link>
               </li>
-              <li>
+              {/* <li>
                 <Link to="/login">Login</Link>
-              </li>
+              </li> */}
               {/* <li>
                 <Link to="/register">Register</Link>
               </li> */}
